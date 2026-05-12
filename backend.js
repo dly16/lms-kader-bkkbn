@@ -4,7 +4,7 @@
 
 const Backend = {
   // URL Web App Google Apps Script
-  URL: 'https://script.google.com/macros/s/AKfycbxWpWW3Gog9kHpYnMuEl7fwIiz2Xm8Jsm1nITTj7wYM8g86W43msoxAepP1Jzfw4D2M/exec',
+  URL: 'https://script.google.com/macros/s/AKfycbxkXazl_ZfRu8jaQDe6rt2a_4aemp1u1KRACaPrv5_mJ-r-rrH24LJ41uW2fCU7CIDx/exec',
 
   async send(type, payload) {
     console.log(`[Backend] Mencoba mengirim data ${type}...`, payload);
