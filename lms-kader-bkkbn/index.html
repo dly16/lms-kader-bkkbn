@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LMS Kader Rumah Data Kependudukan - BKKBN Sulbar</title>
+  <link rel="stylesheet" href="css/style.css?v=3">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Dependencies for PDF & QR Code -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+  <!-- AUTH SECTION (Landing & Login) -->
+  <section id="auth-section">
+    <div class="auth-container">
+      <div class="auth-info">
+        <div class="branding" style="display: flex; flex-direction: row; align-items: center; gap: 24px; margin-bottom: 60px;">
+          <!-- BKKBN Logo -->
+          <img src="img/logo-bkkbn.png" alt="Logo BKKBN" style="height: 85px; object-fit: contain; display: block;">
+          
+          <div>
+            <h1 style="font-size: 2rem; margin-bottom: 4px;">LMS Rumah DataKU</h1>
+            <p style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Platform Pembelajaran Interaktif</p>
+          </div>
+        </div>
+        <div class="hero-text">
+          <h2>Membangun Data, Membangun Bangsa</h2>
+          <p>Tingkatkan kompetensi Anda sebagai Kader Rumah Data Kependudukan melalui platform pembelajaran interaktif ini.</p>
+          
+          <!-- Animated Data SVG -->
+          <div class="hero-animation" style="margin-top: 40px; text-align: center;">
+            <svg viewBox="0 0 400 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">
+              <style>
+                .chart-line { fill: none; stroke: rgba(255,255,255,0.9); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawLine 4s ease-in-out infinite alternate; }
+                .chart-area { fill: url(#gradArea); opacity: 0.6; animation: fadeArea 4s ease-in-out infinite alternate; }
+                .node { fill: white; animation: popNode 4s ease-in-out infinite alternate; }
+                
+                @keyframes drawLine { 0% { stroke-dashoffset: 1000; } 50%, 100% { stroke-dashoffset: 0; } }
+                @keyframes fadeArea { 0% { opacity: 0; transform: translateY(10px); } 50%, 100% { opacity: 0.6; transform: translateY(0); } }
+                @keyframes popNode { 0%, 20% { transform: scale(0); opacity: 0; } 50%, 100% { transform: scale(1); opacity: 1; } }
+                
+                .bar-bg { fill: rgba(255,255,255,0.1); rx: 6; }
+                .bar-fg { fill: var(--accent-teal, #14b8a6); rx: 6; animation: growBar 2s ease-out infinite alternate; transform-origin: center bottom; }
+                .bar-fg.b1 { animation-delay: 0.2s; }
+                .bar-fg.b2 { animation-delay: 0.4s; }
+                .bar-fg.b3 { animation-delay: 0.6s; }
+                .bar-fg.b4 { animation-delay: 0.8s; }
+                .bar-fg.b5 { animation-delay: 1.0s; }
+                
+                @keyframes growBar { 0% { transform: scaleY(0.1); } 100% { transform: scaleY(1); } }
+              </style>
+              
+              <defs>
+                <linearGradient id="gradArea" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:white;stop-opacity:0.8" />
+                  <stop offset="100%" style="stop-color:white;stop-opacity:0" />
+                </linearGradient>
+              </defs>
+
+              <!-- Grid Lines -->
+              <line x1="20" y1="160" x2="380" y2="160" stroke="rgba(255,255,255,0.3)" stroke-width="2" />
+              <line x1="20" y1="120" x2="380" y2="120" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="5,5" />
+              <line x1="20" y1="80" x2="380" y2="80" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="5,5" />
+              <line x1="20" y1="40" x2="380" y2="40" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="5,5" />
+
+              <!-- Bar Chart Backgrounds -->
+              <rect class="bar-bg" x="40" y="40" width="20" height="120" />
+              <rect class="bar-bg" x="100" y="40" width="20" height="120" />
+              <rect class="bar-bg" x="160" y="40" width="20" height="120" />
+              <rect class="bar-bg" x="220" y="40" width="20" height="120" />
+              <rect class="bar-bg" x="280" y="40" width="20" height="120" />
+              <rect class="bar-bg" x="340" y="40" width="20" height="120" />
+
+              <!-- Bar Chart Foregrounds -->
+              <g transform="translate(0, 160) scale(1, -1)">
+                <rect class="bar-fg b1" x="40" y="0" width="20" height="50" />
+                <rect class="bar-fg b2" x="100" y="0" width="20" height="80" />
+                <rect class="bar-fg b3" x="160" y="0" width="20" height="40" />
+                <rect class="bar-fg b4" x="220" y="0" width="20" height="110" />
+                <rect class="bar-fg b5" x="280" y="0" width="20" height="60" />
+                <rect class="bar-fg b1" x="340" y="0" width="20" height="90" />
+              </g>
+
+              <!-- Line Chart Area -->
+              <path class="chart-area" d="M 50 120 L 110 90 L 170 110 L 230 50 L 290 80 L 350 30 L 350 160 L 50 160 Z" />
+              
+              <!-- Line Chart -->
+              <path class="chart-line" d="M 50 120 L 110 90 L 170 110 L 230 50 L 290 80 L 350 30" />
+              
+              <!-- Data Nodes -->
+              <circle class="node" cx="50" cy="120" r="5" style="transform-origin: 50px 120px;" />
+              <circle class="node" cx="110" cy="90" r="5" style="transform-origin: 110px 90px;" />
+              <circle class="node" cx="170" cy="110" r="5" style="transform-origin: 170px 110px;" />
+              <circle class="node" cx="230" cy="50" r="5" style="transform-origin: 230px 50px;" />
+              <circle class="node" cx="290" cy="80" r="5" style="transform-origin: 290px 80px;" />
+              <circle class="node" cx="350" cy="30" r="5" style="transform-origin: 350px 30px;" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="auth-form-container">
+        <div class="glass-card">
+          <h2>Login</h2>
+          <p>Masuk ke akun Anda</p>
+          <form id="loginForm">
+            <div class="form-group">
+              <label>Username</label>
+              <input type="text" name="username" class="form-control" required placeholder="Masukkan username">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" name="password" class="form-control" required placeholder="Masukkan password">
+            </div>
+            <p id="loginError" style="color:#e74c3c; font-size:0.9rem; margin-bottom:15px;"></p>
+            <button type="submit" class="btn btn-primary btn-full">Masuk</button>
+            <p style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+              Belum punya akun? <a href="#" id="showRegisterBtn" style="color: var(--primary); font-weight: bold;">Daftar di sini</a>
+            </p>
+          </form>
+
+          <!-- Register Form (Hidden by default) -->
+          <form id="registerForm" style="display: none;">
+            <div class="form-group">
+              <label>Nama Lengkap</label>
+              <input type="text" name="name" class="form-control" required placeholder="Nama lengkap sesuai KTP">
+            </div>
+            <div class="form-group">
+              <label>NIK</label>
+              <input type="number" name="nik" class="form-control" required placeholder="16 Digit NIK">
+            </div>
+            <div class="form-group">
+              <label>Username</label>
+              <input type="text" name="username" class="form-control" required placeholder="Username untuk login">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" name="password" class="form-control" required placeholder="Buat password">
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom: 15px;">
+               <div class="form-group" style="flex:1; margin-bottom: 0;">
+                 <label>Kabupaten/Kota</label>
+                 <select name="kabupaten" class="form-control" required>
+                   <option value="">Pilih Kabupaten</option>
+                   <option value="Majene">Majene</option>
+                   <option value="Polewali Mandar">Polewali Mandar</option>
+                   <option value="Mamasa">Mamasa</option>
+                   <option value="Mamuju">Mamuju</option>
+                   <option value="Pasangkayu">Pasangkayu</option>
+                   <option value="Mamuju Tengah">Mamuju Tengah</option>
+                 </select>
+               </div>
+               <div class="form-group" style="flex:1; margin-bottom: 0;">
+                 <label>Kecamatan</label>
+                 <input type="text" name="kecamatan" class="form-control" required placeholder="Nama Kecamatan">
+               </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+               <div class="form-group" style="flex:1;">
+                 <label>Desa/Kelurahan</label>
+                 <input type="text" name="desa" class="form-control" required placeholder="Desa/Kelurahan">
+               </div>
+               <div class="form-group" style="flex:1;">
+                 <label>No. HP / WA</label>
+                 <input type="number" name="noHp" class="form-control" required placeholder="0812...">
+               </div>
+            </div>
+            <p id="registerError" style="color:#e74c3c; font-size:0.9rem; margin-bottom:15px;"></p>
+            <button type="submit" class="btn btn-primary btn-full">Daftar Akun Baru</button>
+            <p style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+              Sudah punya akun? <a href="#" id="showLoginBtn" style="color: var(--primary); font-weight: bold;">Masuk</a>
+            </p>
+          </form>
+          
+          <div style="margin-top:20px; font-size:0.9rem; color:#666; border-top:1px solid #eee; padding-top:15px;">
+            <p><strong>Demo Akun:</strong></p>
+            <p>Admin: Adminsulbar / BKKBN666803</p>
+            <p>Kader: kader / kader123</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Floating Background Decorations (Right Side) -->
+    <div class="bg-decorations">
+      <style>
+        .bg-decorations { position: absolute; right: 2%; top: 50%; transform: translateY(-50%); width: 300px; height: 600px; pointer-events: none; z-index: 1; }
+        @media (max-width: 1400px) { .bg-decorations { display: none; } }
+        
+        .floating-card-ui { 
+          background: rgba(255, 255, 255, 0.05); 
+          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
+          border: 1px solid rgba(255, 255, 255, 0.1); 
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); 
+          border-radius: 16px; padding: 16px; color: white; position: absolute;
+        }
+        
+        .fc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .fc-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+        .fc-title { font-weight: 600; font-size: 0.9rem; color: rgba(255,255,255,0.9); }
+        .fc-subtitle { font-size: 0.75rem; color: rgba(255,255,255,0.6); }
+        .fc-progress-bg { height: 6px; background: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden; }
+        .fc-progress-bar { height: 100%; width: 0%; background: var(--accent-teal, #14b8a6); animation: loadBarAnim 3s ease-in-out infinite alternate; }
+        
+        .fcard-1 { top: 10%; right: 10%; width: 220px; animation: floatAnim 6s ease-in-out infinite; }
+        .fcard-2 { top: 40%; right: -5%; width: 180px; animation: floatAnim 7s ease-in-out infinite 1s; }
+        .fcard-3 { bottom: 15%; right: 15%; width: 200px; animation: floatAnim 5s ease-in-out infinite 2s; }
+        
+        @keyframes floatAnim { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+        @keyframes loadBarAnim { 0% { width: 30%; } 100% { width: 90%; } }
+      </style>
+
+      <!-- Connected Nodes SVG Background -->
+      <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index:-1;">
+         <line x1="180" y1="20%" x2="250" y2="45%" stroke="rgba(255,255,255,0.1)" stroke-width="2" stroke-dasharray="5,5" />
+         <line x1="250" y1="45%" x2="160" y2="80%" stroke="rgba(255,255,255,0.1)" stroke-width="2" stroke-dasharray="5,5" />
+      </svg>
+
+      <!-- Card 1 (User / People) -->
+      <div class="floating-card-ui fcard-1">
+        <div class="fc-header">
+           <div class="fc-avatar" style="background: var(--accent-blue, #3B82F6);">👤</div>
+           <div>
+             <div class="fc-title">Kader Pendata</div>
+             <div class="fc-subtitle">Sedang menginput...</div>
+           </div>
+        </div>
+        <div class="fc-progress-bg"><div class="fc-progress-bar"></div></div>
+      </div>
+
+      <!-- Card 2 (Data Chart) -->
+      <div class="floating-card-ui fcard-2">
+         <div class="fc-title" style="margin-bottom: 8px;">Statistik Keluarga</div>
+         <svg viewBox="0 0 100 40" width="100%">
+           <path d="M0 35 Q 25 5, 50 25 T 100 5" fill="none" stroke="var(--accent-amber, #f59e0b)" stroke-width="3" stroke-linecap="round"/>
+           <circle cx="100" cy="5" r="4" fill="var(--accent-amber, #f59e0b)"/>
+         </svg>
+      </div>
+
+      <!-- Card 3 (Admin) -->
+      <div class="floating-card-ui fcard-3">
+        <div class="fc-header" style="margin-bottom:0;">
+           <div class="fc-avatar" style="background: var(--accent-teal, #14b8a6);">👩‍💼</div>
+           <div>
+             <div class="fc-title">Admin Desa</div>
+             <div class="fc-subtitle" style="color: var(--accent-teal, #14b8a6);">Data Tervalidasi ✔️</div>
+           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP SECTION (Dashboard) -->
+  <section id="app-section" style="display: none;">
+    <aside class="sidebar">
+      <div class="sidebar-header" style="padding: 28px 24px 24px; border-bottom: 1px solid rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #3B82F6, #8b5cf6); display: flex; align-items: center; justify-content: center;">
+            <span style="color: white; font-size: 1.1rem; font-weight: 800;">R</span>
+          </div>
+          <div>
+            <h3 style="font-size: 1.1rem; margin: 0;">Rumah DataKU</h3>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0; font-weight: 500;">Learning Platform</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Admin Navigation -->
+      <ul class="sidebar-menu" id="admin-nav" style="display:none; padding-top: 16px;">
+        <li><a href="#" id="nav-admin-dashboard" class="active">📊 Dashboard</a></li>
+        <li><a href="#" id="nav-admin-courses">📚 Manajemen Kursus</a></li>
+        <li><a href="#" id="nav-admin-questionbank">🏦 Bank Soal</a></li>
+        <li><a href="#" id="nav-admin-kader">👥 Data Kader</a></li>
+        <li><a href="#" id="nav-admin-settings">⚙️ Pengaturan Sertifikat</a></li>
+      </ul>
+
+      <!-- Kader Navigation -->
+      <ul class="sidebar-menu" id="kader-nav" style="display:none; padding-top: 16px;">
+        <li><a href="#" id="nav-kader-dashboard" class="active">🏠 Beranda</a></li>
+        <li><a href="#" id="nav-kader-courses">📚 Kursus Tersedia</a></li>
+        <li><a href="#" id="nav-kader-certs">🎓 Sertifikat Saya</a></li>
+      </ul>
+    </aside>
+
+    <main class="main-content-wrapper">
+      <header class="topbar" style="padding: 20px 36px; background: rgba(255,255,255,0.4); backdrop-filter: blur(16px);">
+        <div class="user-info" style="display: flex; align-items: center; gap: 14px;">
+          <div class="avatar" style="width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #3B82F6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.25);">👤</div>
+          <div>
+            <div id="user-name-display" style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">User</div>
+            <div id="user-role-display" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Role</div>
+          </div>
+        </div>
+        <div class="topbar-actions" style="display: flex; gap: 10px;">
+          <button id="theme-toggle" class="btn btn-sm" style="background: rgba(0,0,0,0.05); color: var(--text-main); border-radius: 12px; padding: 10px 18px; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(0,0,0,0.08);">🌙 Dark</button>
+          <button class="btn btn-sm" onclick="App.logout()" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 12px; padding: 10px 20px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 12px rgba(239,68,68,0.25);">Keluar</button>
+        </div>
+      </header>
+
+      <div id="main-content" class="content-area">
+        <!-- Content will be injected here by JS -->
+      </div>
+    </main>
+  </section>
+
+  <!-- Application Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/certificate.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/kader.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
