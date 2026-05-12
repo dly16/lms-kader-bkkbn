@@ -1,5 +1,6 @@
 // ============================================
 // ADMIN.JS - Admin Features & Dashboard
+// Versi: 2026.05.12.01 (Update: Hapus Kader)
 // ============================================
 
 const Admin = {
@@ -624,6 +625,7 @@ const Admin = {
               <th>Username</th>
               <th>Asal Daerah</th>
               <th>Kontak</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -639,6 +641,9 @@ const Admin = {
                   <small>${u.kecamatan || '-'}, ${u.kabupaten || '-'}</small>
                 </td>
                 <td>${u.noHp}</td>
+                <td>
+                  <button class="btn btn-sm" style="background:#e74c3c; color:white; border:none;" onclick="Admin.deleteKader('${u.id}')">Hapus</button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -670,6 +675,24 @@ const Admin = {
         document.getElementById('adminAddError').innerText = res.message;
       }
     });
+  },
+
+  deleteKader(userId) {
+    const user = DB.find(DB.KEYS.USERS, userId);
+    if (!user) return;
+
+    if (confirm(`Apakah Anda yakin ingin menghapus akun kader "${user.name}"? Semua data progress belajar dan sertifikat kader ini akan dihapus secara permanen.`)) {
+      // Delete user
+      DB.remove(DB.KEYS.USERS, userId);
+      
+      // Clean up enrollments
+      const enrollments = DB.getAll(DB.KEYS.ENROLLMENTS);
+      const filteredEnrollments = enrollments.filter(e => e.userId !== userId);
+      DB.set(DB.KEYS.ENROLLMENTS, filteredEnrollments);
+      
+      alert(`Akun kader "${user.name}" telah berhasil dihapus.`);
+      this.renderKader();
+    }
   },
 
   renderQuestionBank(courseId = null, tab = 'pre') {

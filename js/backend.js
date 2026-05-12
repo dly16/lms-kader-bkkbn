@@ -3,27 +3,26 @@
 // ============================================
 
 const Backend = {
-  // GANTI URL INI DENGAN URL WEB APP ANDA
+  // URL Web App Google Apps Script
   URL: 'https://script.google.com/macros/s/AKfycbxWpWW3Gog9kHpYnMuEl7fwIiz2Xm8Jsm1nITTj7wYM8g86W43msoxAepP1Jzfw4D2M/exec',
 
   async send(type, payload) {
-    console.log(`Sending ${type} to backend...`, payload);
+    console.log(`[Backend] Mencoba mengirim data ${type}...`, payload);
     try {
-      // Kita gunakan mode 'no-cors' agar tidak terhambat kebijakan CORS browser 
-      // saat mengirim ke Google Script (ini batasan umum Google Apps Script)
+      // Menggunakan mode no-cors adalah cara paling stabil untuk mengirim data 
+      // dari GitHub Pages ke Google Apps Script tanpa masalah keamanan browser.
+      // Catatan: Dalam mode ini, kita tidak bisa membaca respon dari server,
+      // tapi data tetap akan sampai ke Google Sheets.
       await fetch(this.URL, {
         method: 'POST',
-        mode: 'no-cors', 
+        mode: 'no-cors',
         cache: 'no-cache',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ type, payload })
       });
-      console.log('Data sent successfully');
+      console.log(`[Backend] Sinyal pengiriman ${type} terkirim.`);
       return true;
     } catch (error) {
-      console.error('Backend sync failed:', error);
+      console.error(`[Backend] Gagal mengirim data ${type}:`, error);
       return false;
     }
   },
@@ -31,11 +30,11 @@ const Backend = {
   syncUser(userData) {
     const payload = {
       timestamp: new Date().toLocaleString('id-ID'),
-      id: userData.id,
+      id_user: userData.id,
       nama: userData.name,
       nik: userData.nik,
       username: userData.username,
-      noHp: userData.noHp,
+      no_hp: userData.noHp,
       desa: userData.desa,
       kecamatan: userData.kecamatan,
       kabupaten: userData.kabupaten
