@@ -285,6 +285,9 @@ const Kader = {
       DB.update(DB.KEYS.ENROLLMENTS, enrollment.id, { preTestScore: score });
       alert(`Pre-Test selesai! Nilai Anda: ${score}`);
       
+      // Sync to Google Sheets
+      Backend.syncResult(Auth.getCurrentUser(), course, { ...enrollment, preTestScore: score, status: 'active' });
+
       this.state.currentTestQuestions = null; // Clear cache
       this.state.currentCourse = course;
       this.state.currentModuleIndex = 0;
@@ -482,6 +485,9 @@ const Kader = {
           certNumber: Certificate.generateCertNumber(course.id, enrollment.userId)
         });
         
+        // Sync to Google Sheets
+        Backend.syncResult(Auth.getCurrentUser(), course, enrollment);
+
         this.state.currentTestQuestions = null; // Clear cache
         
         let successHtml = `

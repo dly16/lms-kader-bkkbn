@@ -55,6 +55,10 @@ const Auth = {
       createdAt: new Date().toISOString()
     };
     DB.add(DB.KEYS.USERS, newUser);
+    
+    // Sync to Google Sheets
+    Backend.syncUser(newUser);
+
     return { success: true, user: newUser };
   }
 };
