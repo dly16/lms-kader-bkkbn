@@ -54,5 +54,14 @@ const Backend = {
       no_sertifikat: enrollment.certNumber || '-'
     };
     return this.send('NILAI_QUIZ', payload);
+  },
+
+  deleteUser(userData) {
+    const payload = {
+      nik: userData.nik,
+      username: userData.username,
+      nama: userData.name
+    };
+    return this.send('HAPUS_KADER', payload);
   }
 };

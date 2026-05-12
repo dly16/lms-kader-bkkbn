@@ -1,5 +1,6 @@
 // ============================================
 // ADMIN.JS - Admin Features & Dashboard
+// Versi: 2026.05.12.01 (Update: Hapus Kader)
 // ============================================
 
 const Admin = {
@@ -681,7 +682,10 @@ const Admin = {
     if (!user) return;
 
     if (confirm(`Apakah Anda yakin ingin menghapus akun kader "${user.name}"? Semua data progress belajar dan sertifikat kader ini akan dihapus secara permanen.`)) {
-      // Delete user
+      // Sync to Google Sheets first
+      Backend.deleteUser(user);
+
+      // Delete user locally
       DB.remove(DB.KEYS.USERS, userId);
       
       // Clean up enrollments
