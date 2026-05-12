@@ -642,7 +642,7 @@ const Admin = {
                 </td>
                 <td>${u.noHp}</td>
                 <td>
-                  <button class="btn btn-sm" style="background:#e74c3c; color:white; border:none;" onclick="Admin.deleteKader('${u.id}')">Hapus</button>
+                  <button class="btn btn-sm" style="background:#e74c3c; color:white; border:none;" onclick="Admin.deleteKader('${u.id}', event)">Hapus</button>
                 </td>
               </tr>
             `).join('')}
@@ -677,21 +677,42 @@ const Admin = {
     });
   },
 
-  deleteKader(userId) {
+  async deleteKader(userId, event) {
     const user = DB.find(DB.KEYS.USERS, userId);
     if (!user) return;
 
     if (confirm(`Apakah Anda yakin ingin menghapus akun kader "${user.name}"? Semua data progress belajar dan sertifikat kader ini akan dihapus secara permanen.`)) {
-      // Delete user
-      DB.remove(DB.KEYS.USERS, userId);
-      
-      // Clean up enrollments
-      const enrollments = DB.getAll(DB.KEYS.ENROLLMENTS);
-      const filteredEnrollments = enrollments.filter(e => e.userId !== userId);
-      DB.set(DB.KEYS.ENROLLMENTS, filteredEnrollments);
-      
-      alert(`Akun kader "${user.name}" telah berhasil dihapus.`);
-      this.renderKader();
+      try {
+        // Tampilkan loading sederhana
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = 'Menghapus...';
+        btn.disabled = true;
+
+        console.log('[Admin] Sinkronisasi penghapusan ke Spreadsheet...');
+        
+        // Tunggu proses sinkronisasi ke Google Sheets
+        // Karena mode no-cors, promise fetch akan resolve setelah request terkirim
+        await Backend.deleteUser(user);
+        
+        // Tambahkan jeda sedikit untuk memastikan request sampai sebelum UI diupdate
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Hapus data secara lokal
+        DB.remove(DB.KEYS.USERS, userId);
+        
+        // Bersihkan data enrollment terkait
+        const enrollments = DB.getAll(DB.KEYS.ENROLLMENTS);
+        const filteredEnrollments = enrollments.filter(e => e.userId !== userId);
+        DB.set(DB.KEYS.ENROLLMENTS, filteredEnrollments);
+        
+        alert(`Akun kader "${user.name}" telah berhasil dihapus dari sistem dan disinkronkan ke spreadsheet.`);
+        this.renderKader();
+      } catch (error) {
+        console.error('[Admin] Gagal saat menghapus kader:', error);
+        alert('Terjadi kesalahan saat menghapus data. Silakan coba lagi.');
+        this.renderKader();
+      }
     }
   },
 
