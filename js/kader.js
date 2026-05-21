@@ -60,7 +60,6 @@ const Kader = {
           </div>
         </div>
       </div>
-      </div>
 
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-top: 30px;">
         <!-- Announcements -->

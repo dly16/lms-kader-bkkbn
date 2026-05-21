@@ -222,8 +222,8 @@ const Admin = {
               <input type="url" name="docUrl" class="form-control" placeholder="https://docs.google.com/presentation/d/.../embed">
             </div>
             <div class="form-group" style="flex:1;">
-              <label>ATAU Unggah File (Maks 2MB)</label>
-              <input type="file" id="pptUpload" accept=".pdf,.ppt,.pptx" class="form-control">
+              <label>ATAU Unggah File (Maks 5MB)</label>
+              <input type="file" id="pptUpload" accept=".pdf,.ppt,.pptx,.jpg,.jpeg,.png" class="form-control">
             </div>
             <div class="form-group" style="flex:1;">
               <label>Waktu Minimal Baca (Detik)</label>
@@ -391,16 +391,18 @@ const Admin = {
       
       if (fileInput && fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        if (file.size > 2.5 * 1024 * 1024) {
-          alert('Ukuran file terlalu besar! Maksimal 2MB untuk simulasi ini.');
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Ukuran file terlalu besar! Maksimal 5MB.');
           return;
         }
         fileName = file.name;
-        fileDataURL = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target.result);
-          reader.readAsDataURL(file);
-        });
+        const uploadRes = await Backend.uploadFile(file);
+        if (uploadRes && uploadRes.success) {
+          fileDataURL = uploadRes.filePath;
+        } else {
+          alert('Gagal mengunggah file ke server: ' + (uploadRes.message || 'Error'));
+          return;
+        }
       }
 
       if (data.videoUrl && data.videoUrl.trim() !== '') {
@@ -554,7 +556,10 @@ const Admin = {
             <h2>Data Kader</h2>
             <p>Daftar kader terdaftar di LMS</p>
           </div>
-          <button class="btn btn-primary" id="addKaderBtn">+ Tambah Kader</button>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-outline" id="exportKaderBtn" onclick="Admin.exportKaderCSV()">📤 Ekspor Laporan</button>
+            <button class="btn btn-primary" id="addKaderBtn">+ Tambah Kader</button>
+          </div>
         </div>
       </div>
       
@@ -642,6 +647,7 @@ const Admin = {
                 </td>
                 <td>${u.noHp}</td>
                 <td>
+                  <button class="btn btn-sm btn-primary" onclick="Admin.showKaderProgress('${u.id}')">Lihat Progres</button>
                   <button class="btn btn-sm" style="background:#e74c3c; color:white; border:none;" onclick="Admin.deleteKader('${u.id}', event)">Hapus</button>
                 </td>
               </tr>
@@ -1073,8 +1079,9 @@ const Admin = {
         <!-- Form Tambah Modul -->
         <div>
           <div class="glass-panel" style="padding: 24px; position: sticky; top: 20px;">
-            <h3 style="margin-bottom: 20px;">Tambah Modul Baru</h3>
+            <h3 id="modFormTitle" style="margin-bottom: 20px;">Tambah Modul Baru</h3>
             <form id="addModuleForm">
+              <input type="hidden" id="editingModuleId">
               <div class="form-group">
                 <label>Judul Modul</label>
                 <input type="text" id="modTitle" class="form-control" required placeholder="Contoh: Pengenalan DataKU">
@@ -1085,6 +1092,7 @@ const Admin = {
                   <option value="slide">Slide Materi (Teks)</option>
                   <option value="video">Video (YouTube)</option>
                   <option value="iframe">Dokumen/Iframe (Link)</option>
+                  <option value="file">File Presentasi/PDF (Upload)</option>
                 </select>
               </div>
               
@@ -1109,7 +1117,20 @@ const Admin = {
                 </div>
               </div>
 
-              <button type="submit" class="btn btn-primary btn-full">Simpan Modul</button>
+              <div id="modInputFile" class="mod-input-group" style="display:none;">
+                <div class="form-group">
+                  <label>Unggah Berkas (PDF/PPT/PPTX/JPG/PNG, Maks 5MB)</label>
+                  <input type="file" id="modFileUpload" accept=".pdf,.ppt,.pptx,.jpg,.jpeg,.png" class="form-control">
+                  <div id="modCurrentFileContainer" style="margin-top:8px; font-size:0.85rem; display:none;">
+                    File saat ini: <a id="modCurrentFileLink" href="#" target="_blank" style="color:var(--accent-blue); font-weight:600;"></a>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:10px; margin-top:15px;">
+                <button type="button" class="btn btn-outline" id="cancelModBtn" style="display:none; flex:1;">Batal</button>
+                <button type="submit" class="btn btn-primary" id="saveModBtn" style="flex:2;">Simpan Modul</button>
+              </div>
             </form>
           </div>
         </div>
@@ -1129,6 +1150,7 @@ const Admin = {
                     </div>
                   </div>
                   <div style="display:flex; gap:8px;">
+                    <button class="btn btn-sm btn-outline" style="padding:4px 8px;" onclick="Admin.editModule('${course.id}', '${m.id}')">Edit</button>
                     <button class="btn btn-sm btn-outline" style="color:#e74c3c; border-color:#e74c3c; padding:4px 8px;" onclick="Admin.deleteModule('${course.id}', '${m.id}')">Hapus</button>
                   </div>
                 </div>
@@ -1141,9 +1163,13 @@ const Admin = {
     `;
     App.setContent(html);
 
-    document.getElementById('addModuleForm')?.addEventListener('submit', (e) => {
+    document.getElementById('addModuleForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      this.saveModule(courseId);
+      await this.saveModule(courseId);
+    });
+
+    document.getElementById('cancelModBtn')?.addEventListener('click', () => {
+      this.resetModuleForm();
     });
   },
 
@@ -1153,11 +1179,70 @@ const Admin = {
     if (type === 'slide') document.getElementById('modInputSlide').style.display = 'block';
     if (type === 'video') document.getElementById('modInputVideo').style.display = 'block';
     if (type === 'iframe') document.getElementById('modInputIframe').style.display = 'block';
+    if (type === 'file') document.getElementById('modInputFile').style.display = 'block';
   },
 
-  saveModule(courseId) {
+  editModule(courseId, moduleId) {
+    const course = DB.find(DB.KEYS.COURSES, courseId);
+    if (!course) return;
+    const mod = (course.modules || []).find(m => m.id === moduleId);
+    if (!mod) return;
+
+    document.getElementById('editingModuleId').value = mod.id;
+    document.getElementById('modTitle').value = mod.title;
+    document.getElementById('modType').value = mod.type;
+    
+    this.toggleModInputs();
+
+    if (mod.type === 'slide') {
+      const slides = mod.content.slides || [];
+      document.getElementById('modSlideContent').value = slides.length > 0 ? slides[0].body : '';
+    } else if (mod.type === 'video') {
+      document.getElementById('modVideoUrl').value = mod.content.videoUrl || '';
+    } else if (mod.type === 'iframe') {
+      document.getElementById('modIframeUrl').value = mod.content.url || '';
+    } else if (mod.type === 'file') {
+      const fileContainer = document.getElementById('modCurrentFileContainer');
+      const fileLink = document.getElementById('modCurrentFileLink');
+      if (mod.content.fileData) {
+        fileLink.href = mod.content.fileData;
+        fileLink.innerText = mod.content.fileName || 'Lihat File';
+        fileContainer.style.display = 'block';
+      } else {
+        fileContainer.style.display = 'none';
+      }
+    }
+
+    document.getElementById('modFormTitle').innerText = 'Edit Modul';
+    document.getElementById('saveModBtn').innerText = 'Perbarui Modul';
+    document.getElementById('cancelModBtn').style.display = 'block';
+    
+    document.getElementById('addModuleForm').scrollIntoView({ behavior: 'smooth' });
+  },
+
+  resetModuleForm() {
+    document.getElementById('editingModuleId').value = '';
+    document.getElementById('modTitle').value = '';
+    document.getElementById('modType').value = 'slide';
+    document.getElementById('modSlideContent').value = '';
+    document.getElementById('modVideoUrl').value = '';
+    document.getElementById('modIframeUrl').value = '';
+    const fileUpload = document.getElementById('modFileUpload');
+    if (fileUpload) fileUpload.value = '';
+    const container = document.getElementById('modCurrentFileContainer');
+    if (container) container.style.display = 'none';
+    
+    this.toggleModInputs();
+    
+    document.getElementById('modFormTitle').innerText = 'Tambah Modul Baru';
+    document.getElementById('saveModBtn').innerText = 'Simpan Modul';
+    document.getElementById('cancelModBtn').style.display = 'none';
+  },
+
+  async saveModule(courseId) {
     const title = document.getElementById('modTitle').value;
     const type = document.getElementById('modType').value;
+    const editingId = document.getElementById('editingModuleId').value;
     const course = DB.find(DB.KEYS.COURSES, courseId);
     if (!course) return;
 
@@ -1170,26 +1255,292 @@ const Admin = {
       content = { videoUrl: url, videoTitle: title };
     } else if (type === 'iframe') {
       content = { url: document.getElementById('modIframeUrl').value };
+    } else if (type === 'file') {
+      const fileInput = document.getElementById('modFileUpload');
+      let fileData = '';
+      let fileName = '';
+
+      if (editingId) {
+        const existingMod = (course.modules || []).find(m => m.id === editingId);
+        if (existingMod && existingMod.type === 'file') {
+          fileData = existingMod.content.fileData || '';
+          fileName = existingMod.content.fileName || '';
+        }
+      }
+
+      if (fileInput && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Ukuran file terlalu besar! Maksimal 5MB.');
+          return;
+        }
+        fileName = file.name;
+        const uploadRes = await Backend.uploadFile(file);
+        if (uploadRes && uploadRes.success) {
+          fileData = uploadRes.filePath;
+        } else {
+          alert('Gagal mengunggah file ke server: ' + (uploadRes.message || 'Error'));
+          return;
+        }
+      }
+
+      if (!fileData) {
+        alert('Mohon unggah berkas terlebih dahulu!');
+        return;
+      }
+
+      content = { fileData, fileName, description: 'Unduh file materi pembelajaran' };
     }
 
-    const newModule = {
-      id: DB.genId(),
-      title,
-      type,
-      content,
-      order: (course.modules ? course.modules.length : 0) + 1
+    if (editingId) {
+      const modules = course.modules || [];
+      const index = modules.findIndex(m => m.id === editingId);
+      if (index !== -1) {
+        modules[index] = {
+          ...modules[index],
+          title,
+          type,
+          content
+        };
+        
+        DB.update(DB.KEYS.COURSES, courseId, { 
+          modules: modules
+        });
+        alert('Modul berhasil diperbarui!');
+      }
+    } else {
+      const newModule = {
+        id: DB.genId(),
+        title,
+        type,
+        content,
+        order: (course.modules ? course.modules.length : 0) + 1
+      };
+
+      if (!course.modules) course.modules = [];
+      course.modules.push(newModule);
+      
+      DB.update(DB.KEYS.COURSES, courseId, { 
+        modules: course.modules,
+        totalModules: course.modules.length 
+      });
+      alert('Modul berhasil ditambahkan!');
+    }
+
+    this.renderCourseModules(courseId);
+  },
+
+  showKaderProgress(userId) {
+    const user = DB.find(DB.KEYS.USERS, userId);
+    if (!user) return;
+
+    const enrollments = DB.getAll(DB.KEYS.ENROLLMENTS).filter(e => e.userId === userId);
+    const courses = DB.getAll(DB.KEYS.COURSES);
+
+    let progressHtml = '';
+    if (enrollments.length === 0) {
+      progressHtml = `
+        <div style="text-align:center; padding: 40px 20px; color: var(--text-muted);">
+          <span style="font-size:3rem; display:block; margin-bottom:15px;">📋</span>
+          Kader belum memulai pelatihan apa pun.
+        </div>
+      `;
+    } else {
+      progressHtml = enrollments.map(e => {
+        const course = courses.find(c => c.id === e.courseId) || { title: 'Kursus Tidak Diketahui', category: 'Umum', passingGrade: 70 };
+        const score = e.postTestScore !== null ? e.postTestScore : '-';
+        const isPassed = e.status === 'completed' || (e.postTestScore !== null && e.postTestScore >= course.passingGrade);
+        const badgeColor = isPassed ? '#2ecc71' : (e.postTestScore !== null ? '#e74c3c' : '#f1c40f');
+        const badgeText = isPassed ? 'Lulus' : (e.postTestScore !== null ? 'Tidak Lulus' : 'Sedang Belajar');
+        
+        return `
+          <div style="background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.6); border-radius: 16px; padding: 20px; margin-bottom: 16px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+              <div>
+                <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--accent-blue); background:rgba(59,130,246,0.1); padding:4px 8px; border-radius:6px; margin-right:8px;">${course.category}</span>
+                <h4 style="margin:8px 0 0 0; font-size:1.1rem; color:var(--text-main); font-weight:700;">${course.title}</h4>
+              </div>
+              <span style="background:${badgeColor}; color:white; font-size:0.8rem; font-weight:700; padding:6px 12px; border-radius:20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">${badgeText}</span>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:15px; margin-top:15px; background:rgba(0,0,0,0.02); padding:12px; border-radius:10px;">
+              <div>
+                <span style="font-size:0.75rem; color:var(--text-muted); display:block;">Progres Materi</span>
+                <strong style="font-size:1rem; color:var(--text-main);">${e.progress}%</strong>
+              </div>
+              <div>
+                <span style="font-size:0.75rem; color:var(--text-muted); display:block;">Nilai Pre-Test</span>
+                <strong style="font-size:1rem; color:var(--text-main);">${e.preTestScore !== null ? e.preTestScore : '-'}</strong>
+              </div>
+              <div>
+                <span style="font-size:0.75rem; color:var(--text-muted); display:block;">Nilai Post-Test</span>
+                <strong style="font-size:1rem; color:var(--text-main);">${score} (KM: ${course.passingGrade})</strong>
+              </div>
+              <div>
+                <span style="font-size:0.75rem; color:var(--text-muted); display:block;">No. Sertifikat</span>
+                <strong style="font-size:0.85rem; color:var(--text-main); font-family:monospace; word-break:break-all;">${e.certNumber || '-'}</strong>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:12px;">
+              <span>Mulai: ${e.startedAt ? new Date(e.startedAt).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '-'}</span>
+              <span>Selesai: ${e.completedAt ? new Date(e.completedAt).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '-'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const modalId = 'kader-progress-modal';
+    document.getElementById(modalId)?.remove();
+
+    const modalDiv = document.createElement('div');
+    modalDiv.id = modalId;
+    modalDiv.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    `;
+
+    modalDiv.innerHTML = `
+      <div class="glass-modal" style="
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 28px;
+        width: 90%;
+        max-width: 680px;
+        max-height: 85vh;
+        overflow-y: auto;
+        padding: 32px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+      ">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:16px;">
+          <div>
+            <h3 style="margin:0 0 4px 0; font-size:1.4rem; color:var(--text-main); font-weight:800; background: linear-gradient(135deg, var(--accent-blue), #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Progres Belajar Kader</h3>
+            <p style="margin:0; font-size:0.9rem; color:var(--text-muted); font-weight:600;">${user.name} (NIK: ${user.nik})</p>
+          </div>
+          <button id="close-modal-btn" style="
+            background: rgba(0,0,0,0.05);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            transition: all 0.2s;
+          " onmouseover="this.style.background='rgba(231,76,60,0.15)'; this.style.color='#e74c3c';" onmouseout="this.style.background='rgba(0,0,0,0.05)'; this.style.color='var(--text-main)';">✕</button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <h4 style="font-size:0.95rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:12px; font-weight:700;">Informasi Profil</h4>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.9rem; background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.5); padding:16px; border-radius:14px;">
+            <div><span style="color:var(--text-muted)">Wilayah:</span> ${user.desa}, Kec. ${user.kecamatan}, Kab. ${user.kabupaten}</div>
+            <div><span style="color:var(--text-muted)">No. HP:</span> ${user.noHp}</div>
+            <div><span style="color:var(--text-muted)">Username:</span> ${user.username}</div>
+            <div><span style="color:var(--text-muted)">Tanggal Daftar:</span> ${user.createdAt ? new Date(user.createdAt).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}) : '-'}</div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size:0.95rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:12px; font-weight:700;">Daftar Pelatihan & Capaian</h4>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            ${progressHtml}
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modalDiv);
+
+    setTimeout(() => {
+      modalDiv.style.opacity = '1';
+      modalDiv.querySelector('.glass-modal').style.transform = 'scale(1)';
+    }, 10);
+
+    const closeModal = () => {
+      modalDiv.style.opacity = '0';
+      modalDiv.querySelector('.glass-modal').style.transform = 'scale(0.9)';
+      setTimeout(() => modalDiv.remove(), 300);
     };
 
-    if (!course.modules) course.modules = [];
-    course.modules.push(newModule);
-    
-    DB.update(DB.KEYS.COURSES, courseId, { 
-      modules: course.modules,
-      totalModules: course.modules.length 
+    modalDiv.querySelector('#close-modal-btn').addEventListener('click', closeModal);
+    modalDiv.addEventListener('click', (e) => {
+      if (e.target === modalDiv) closeModal();
+    });
+  },
+
+  exportKaderCSV() {
+    const users = DB.getAll(DB.KEYS.USERS).filter(u => u.role === 'kader');
+    const enrollments = DB.getAll(DB.KEYS.ENROLLMENTS);
+    const courses = DB.getAll(DB.KEYS.COURSES);
+
+    const headers = [
+      "Nama Lengkap", "NIK", "Username", "Desa/Kelurahan", "Kecamatan", 
+      "Kabupaten/Kota", "No HP", "Kursus Diikuti", "Progress (%)", 
+      "Nilai Pre-Test", "Nilai Post-Test", "Status", "No Sertifikat", 
+      "Mulai Pelatihan", "Selesai Pelatihan"
+    ];
+
+    let rows = [headers];
+
+    users.forEach(u => {
+      const userEnrollments = enrollments.filter(e => e.userId === u.id);
+      if (userEnrollments.length === 0) {
+        rows.push([
+          u.name, u.nik, u.username, u.desa, u.kecamatan, 
+          u.kabupaten, u.noHp, "-", "-", "-", "-", "Belum Mulai", "-", "-", "-"
+        ]);
+      } else {
+        userEnrollments.forEach(e => {
+          const course = courses.find(c => c.id === e.courseId) || { title: '-' };
+          const score = e.postTestScore !== null ? e.postTestScore : '-';
+          rows.push([
+            u.name, u.nik, u.username, u.desa, u.kecamatan, 
+            u.kabupaten, u.noHp, course.title, e.progress + "%", 
+            e.preTestScore !== null ? e.preTestScore : '-', score, 
+            e.status === 'completed' ? 'Lulus' : (e.postTestScore !== null ? 'Tidak Lulus' : 'Sedang Belajar'),
+            e.certNumber || '-', e.startedAt || '-', e.completedAt || '-'
+          ]);
+        });
+      }
     });
 
-    alert('Modul berhasil ditambahkan!');
-    this.renderCourseModules(courseId);
+    const csvContent = "\uFEFF" + rows.map(r => r.map(val => {
+      const cleaned = (val === null || val === undefined) ? "" : String(val).replace(/"/g, '""');
+      return `"${cleaned}"`;
+    }).join(",")).join("\r\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (navigator.msSaveBlob) {
+      navigator.msSaveBlob(blob, `Laporan_Kader_LMS_BKKBN.csv`);
+    } else {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Laporan_Kader_LMS_BKKBN_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   },
 
   deleteModule(courseId, moduleId) {

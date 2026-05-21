@@ -23,6 +23,16 @@ const DB = {
 
   set(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
+    // Hubungkan dengan Sinkronisasi Database MySQL
+    if (key === this.KEYS.QUESTION_BANK) {
+      Backend.syncQuestionBank(val);
+    } else if (key === this.KEYS.CERT_TEMPLATE) {
+      Backend.saveSetting('lms_cert_template', val);
+    }
+  },
+
+  setLocalSilently(key, val) {
+    localStorage.setItem(key, JSON.stringify(val));
   },
 
   getAll(key) { return this.get(key) || []; },
@@ -31,26 +41,90 @@ const DB = {
     const arr = this.getAll(key);
     arr.push(item);
     this.set(key, arr);
+    this.syncItem(key, item, 'save');
     return item;
   },
 
   update(key, id, updates) {
     const arr = this.getAll(key);
     const idx = arr.findIndex(i => i.id === id);
-    if (idx !== -1) { arr[idx] = { ...arr[idx], ...updates }; this.set(key, arr); }
+    if (idx !== -1) { 
+      arr[idx] = { ...arr[idx], ...updates }; 
+      this.set(key, arr); 
+      this.syncItem(key, arr[idx], 'save');
+    }
     return idx !== -1;
   },
 
   remove(key, id) {
+    const item = this.find(key, id);
     const arr = this.getAll(key).filter(i => i.id !== id);
     this.set(key, arr);
+    if (item) {
+      this.syncItem(key, item, 'delete');
+    }
   },
 
   find(key, id) {
     return this.getAll(key).find(i => i.id === id) || null;
   },
 
-  genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+  genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); },
+
+  // Sinkronisasi dengan MySQL API saat Aplikasi Dibuka
+  async initFromBackend() {
+    console.log('[DB] Menginisialisasi data dari database MySQL...');
+    try {
+      const response = await Backend.getInitialData();
+      if (response && response.success && response.data) {
+        const data = response.data;
+        if (data.users && data.users.length > 0) {
+          console.log('[DB] Data MySQL ditemukan. Sinkronisasi ke LocalStorage...');
+          this.setLocalSilently(this.KEYS.USERS, data.users);
+          this.setLocalSilently(this.KEYS.COURSES, data.courses);
+          this.setLocalSilently(this.KEYS.ENROLLMENTS, data.enrollments || []);
+          this.setLocalSilently(this.KEYS.ANNOUNCEMENTS, data.announcements || []);
+          this.setLocalSilently(this.KEYS.QUESTION_BANK, data.questionBank || []);
+          if (data.certTemplate) {
+            this.setLocalSilently(this.KEYS.CERT_TEMPLATE, data.certTemplate);
+          }
+          localStorage.setItem('lms_seeded', 'true');
+        } else {
+          console.log('[DB] Database MySQL kosong. Menginisialisasi data awal lokal...');
+          seedData();
+          console.log('[DB] Mengunggah data awal ke MySQL...');
+          await Backend.syncAllFromLocal({
+            users: this.getAll(this.KEYS.USERS),
+            courses: this.getAll(this.KEYS.COURSES),
+            enrollments: this.getAll(this.KEYS.ENROLLMENTS),
+            announcements: this.getAll(this.KEYS.ANNOUNCEMENTS),
+            questionBank: this.getAll(this.KEYS.QUESTION_BANK),
+            certTemplate: this.get(this.KEYS.CERT_TEMPLATE)
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[DB] Gagal sinkronisasi dengan MySQL:', error);
+      if (!localStorage.getItem('lms_seeded')) {
+        seedData();
+      }
+    }
+  },
+
+  syncItem(key, item, action) {
+    if (key === this.KEYS.SESSION) return;
+
+    if (action === 'save') {
+      if (key === this.KEYS.USERS) Backend.saveUser(item);
+      if (key === this.KEYS.COURSES) Backend.saveCourse(item);
+      if (key === this.KEYS.ENROLLMENTS) Backend.saveEnrollment(item);
+      if (key === this.KEYS.ANNOUNCEMENTS) Backend.saveAnnouncement(item);
+    } else if (action === 'delete') {
+      if (key === this.KEYS.USERS) Backend.deleteUser(item);
+      if (key === this.KEYS.COURSES) Backend.deleteCourse(item);
+      if (key === this.KEYS.ANNOUNCEMENTS) Backend.deleteAnnouncement(item);
+    }
+  }
 };
 
 // ============================================

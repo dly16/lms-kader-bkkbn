@@ -3,7 +3,8 @@
 // ============================================
 
 const App = {
-  init() {
+  async init() {
+    await DB.initFromBackend();
     this.checkAuth();
     this.setupThemeToggle();
   },
